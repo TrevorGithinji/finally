@@ -12,7 +12,8 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun HomeScreen(
     user: User,
-    onLogoutClick: () -> Unit
+    onLogoutClick: () -> Unit,
+    onViewProductsClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -68,10 +69,24 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(32.dp))
         
         Button(
-            onClick = onLogoutClick,
+            onClick = onViewProductsClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
+        ) {
+            Text("View Products", fontSize = 16.sp)
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Button(
+            onClick = onLogoutClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error
+            )
         ) {
             Text("Logout", fontSize = 16.sp)
         }

@@ -38,6 +38,7 @@ fun AppContent(
 ) {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Login) }
     var currentUser by remember { mutableStateOf<User?>(null) }
+    var selectedProduct by remember { mutableStateOf<Product?>(null) }
     
     when (currentScreen) {
         Screen.Login -> {
@@ -46,7 +47,7 @@ fun AppContent(
                     val user = UserManager.loginUser(email, password)
                     if (user != null) {
                         currentUser = user
-                        currentScreen = Screen.Home
+                        currentScreen = Screen.ProductList
                         onShowToast("Login successful!")
                     } else {
                         onShowToast("Invalid email or password")
@@ -83,7 +84,56 @@ fun AppContent(
                         currentUser = null
                         currentScreen = Screen.Login
                         onShowToast("Logged out successfully")
+                    },
+                    onViewProductsClick = {
+                        currentScreen = Screen.ProductList
                     }
+                )
+            }
+        }
+        
+        Screen.ProductList -> {
+            ProductListScreen(
+                currentUser = currentUser,
+                onProductClick = { product ->
+                    selectedProduct = product
+                    currentScreen = Screen.ProductDetail
+                },
+                onAddProductClick = {
+                    currentScreen = Screen.AddProduct
+                },
+                onLogoutClick = {
+                    currentUser = null
+                    currentScreen = Screen.Login
+                    onShowToast("Logged out successfully")
+                }
+            )
+        }
+        
+        Screen.AddProduct -> {
+            currentUser?.let { user ->
+                AddProductScreen(
+                    currentUser = user,
+                    onProductAdded = {
+                        currentScreen = Screen.ProductList
+                        onShowToast("Product added successfully!")
+                    },
+                    onBackClick = {
+                        currentScreen = Screen.ProductList
+                    }
+                )
+            }
+        }
+        
+        Screen.ProductDetail -> {
+            selectedProduct?.let { product ->
+                ProductDetailScreen(
+                    product = product,
+                    currentUser = currentUser,
+                    onBackClick = {
+                        currentScreen = Screen.ProductList
+                    },
+                    onShowToast = onShowToast
                 )
             }
         }
@@ -94,4 +144,7 @@ sealed class Screen {
     object Login : Screen()
     object Register : Screen()
     object Home : Screen()
+    object ProductList : Screen()
+    object AddProduct : Screen()
+    object ProductDetail : Screen()
 }
