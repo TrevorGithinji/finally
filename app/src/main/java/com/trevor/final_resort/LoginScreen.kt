@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,6 +26,9 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -56,6 +60,7 @@ fun LoginScreen(
             label = { Text("Email Address") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            enabled = !isLoading,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Next
@@ -68,6 +73,7 @@ fun LoginScreen(
             label = { Text("Password") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            enabled = !isLoading,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
@@ -100,15 +106,30 @@ fun LoginScreen(
                     }
                     else -> {
                         showError = false
-                        onLoginClick(email, password)
+                        isLoading = true
+                        scope.launch {
+                            try {
+                                onLoginClick(email, password)
+                            } finally {
+                                isLoading = false
+                            }
+                        }
                     }
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp)
+                .height(50.dp),
+            enabled = !isLoading
         ) {
-            Text("Login", fontSize = 16.sp)
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            } else {
+                Text("Login", fontSize = 16.sp)
+            }
         }
         
         Row(
@@ -120,7 +141,7 @@ fun LoginScreen(
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            TextButton(onClick = onRegisterClick) {
+            TextButton(onClick = onRegisterClick, enabled = !isLoading) {
                 Text(
                     text = "Register",
                     fontSize = 14.sp,

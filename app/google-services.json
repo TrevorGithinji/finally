@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "867816466941",
+    "project_id": "belmont-823d6",
+    "storage_bucket": "belmont-823d6.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:867816466941:android:264c71efd50330aa4a9194",
+        "android_client_info": {
+          "package_name": "com.trevor.final_resort"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmvxzjRh62D3byC1sLzULfW3bLx871tD4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -2,8 +2,12 @@ package com.trevor.final_resort
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -13,11 +17,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,8 +37,23 @@ fun ProductDetailScreen(
     onShowToast: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val averageRating = ProductManager.getAverageRating(product.id)
+    var averageRating by remember { mutableStateOf(0f) }
     var showRatingDialog by remember { mutableStateOf(false) }
+    var isLoadingRating by remember { mutableStateOf(true) }
+    
+    val scope = rememberCoroutineScope()
+    
+    // Load average rating
+    LaunchedEffect(product.id) {
+        try {
+            isLoadingRating = true
+            averageRating = ProductManager.getAverageRating(product.id)
+        } catch (e: Exception) {
+            onShowToast("Failed to load rating: ${e.message}")
+        } finally {
+            isLoadingRating = false
+        }
+    }
     
     Scaffold(
         topBar = {
@@ -49,23 +73,56 @@ fun ProductDetailScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Product Image Placeholder
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .padding(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+            // Product Images
+            if (product.images.isNotEmpty()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp)
+                        .padding(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Text(
-                        text = "📷 Product Image",
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    LazyRow(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(product.images) { imageUri ->
+                            Image(
+                                painter = rememberAsyncImagePainter(
+                                    ImageRequest.Builder(LocalContext.current)
+                                        .data(imageUri)
+                                        .build()
+                                ),
+                                contentDescription = "Product image",
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .width(200.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                }
+            } else {
+                // Product Image Placeholder
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .padding(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "📷 No Image Available",
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
             
@@ -283,15 +340,27 @@ fun ProductDetailScreen(
         RatingDialog(
             onDismiss = { showRatingDialog = false },
             onRatingSubmitted = { rating, comment ->
-                val newRating = Rating(
-                    userId = currentUser?.email ?: "",
-                    userName = "${currentUser?.firstName} ${currentUser?.secondName}",
-                    rating = rating,
-                    comment = comment
-                )
-                ProductManager.addRating(product.id, newRating)
-                showRatingDialog = false
-                onShowToast("Rating submitted successfully!")
+                scope.launch {
+                    try {
+                        val newRating = Rating(
+                            userId = currentUser?.email ?: "",
+                            userName = "${currentUser?.firstName} ${currentUser?.secondName}",
+                            rating = rating,
+                            comment = comment
+                        )
+                        val success = ProductManager.addRating(product.id, newRating)
+                        if (success) {
+                            showRatingDialog = false
+                            onShowToast("Rating submitted successfully!")
+                            // Reload the average rating
+                            averageRating = ProductManager.getAverageRating(product.id)
+                        } else {
+                            onShowToast("Failed to submit rating")
+                        }
+                    } catch (e: Exception) {
+                        onShowToast("Failed to submit rating: ${e.message}")
+                    }
+                }
             }
         )
     }
