@@ -39,17 +39,11 @@ object UserManager {
         }
     }
     
-    fun getCurrentUser(): User? {
+    suspend fun getCurrentUser(): User? {
         val firebaseUser = firebaseService.getCurrentUser()
         return firebaseUser?.let { user ->
-            // For now, return a basic user object
-            // In a real app, you might want to fetch the full user data
-            User(
-                email = user.email ?: "",
-                firstName = user.displayName?.split(" ")?.firstOrNull() ?: "",
-                secondName = user.displayName?.split(" ")?.getOrNull(1) ?: "",
-                password = "" // Don't store passwords in User object for security
-            )
+            // Fetch the full user data from Firestore
+            firebaseService.getUserData(user.uid).getOrNull()
         }
     }
     
