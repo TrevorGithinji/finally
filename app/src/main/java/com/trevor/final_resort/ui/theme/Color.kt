@@ -2,10 +2,26 @@ package com.trevor.final_resort.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Black, Gold, and White Theme Colors
+val Black = Color(0xFF000000)
+val DarkGray = Color(0xFF1A1A1A)
+val MediumGray = Color(0xFF333333)
+val LightGray = Color(0xFF666666)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val Gold = Color(0xFFFFD700)
+val GoldLight = Color(0xFFFFE55C)
+val GoldDark = Color(0xFFB8860B)
+val GoldAccent = Color(0xFFFFA500)
+
+val White = Color(0xFFFFFFFF)
+val OffWhite = Color(0xFFF5F5F5)
+val Cream = Color(0xFFFDFDFD)
+
+// Legacy colors for compatibility (keeping the same names)
+val Purple80 = GoldLight
+val PurpleGrey80 = LightGray
+val Pink80 = Gold
+
+val Purple40 = Gold
+val PurpleGrey40 = MediumGray
+val Pink40 = GoldDark

@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,12 +35,15 @@ fun ProductDetailScreen(
     product: Product,
     currentUser: User?,
     onBackClick: () -> Unit,
-    onShowToast: (String) -> Unit
+    onShowToast: (String) -> Unit,
+    onProductDeleted: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var averageRating by remember { mutableStateOf(0f) }
     var showRatingDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var isLoadingRating by remember { mutableStateOf(true) }
+    var isDeleting by remember { mutableStateOf(false) }
     
     val scope = rememberCoroutineScope()
     
@@ -62,6 +66,21 @@ fun ProductDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    // Show delete button only if current user is the seller
+                    if (currentUser != null && currentUser.email == product.sellerId) {
+                        IconButton(
+                            onClick = { showDeleteDialog = true },
+                            enabled = !isDeleting
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete Product",
+                                tint = if (isDeleting) Color.Gray else MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             )
@@ -334,6 +353,61 @@ fun ProductDetailScreen(
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
+    }
+    
+    // Delete Confirmation Dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!isDeleting) showDeleteDialog = false },
+            title = { Text("Delete Product") },
+            text = { 
+                Text("Are you sure you want to delete '${product.name}'? This action cannot be undone.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            isDeleting = true
+                            try {
+                                val success = ProductManager.deleteProduct(product.id, currentUser?.email ?: "")
+                                if (success) {
+                                    onShowToast("Product deleted successfully!")
+                                    onProductDeleted()
+                                } else {
+                                    onShowToast("Failed to delete product")
+                                }
+                            } catch (e: Exception) {
+                                onShowToast("Error deleting product: ${e.message}")
+                            } finally {
+                                isDeleting = false
+                                showDeleteDialog = false
+                            }
+                        }
+                    },
+                    enabled = !isDeleting,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    if (isDeleting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = MaterialTheme.colorScheme.onError
+                        )
+                    } else {
+                        Text("Delete")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteDialog = false },
+                    enabled = !isDeleting
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
     
     if (showRatingDialog) {

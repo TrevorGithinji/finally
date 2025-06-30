@@ -123,4 +123,42 @@ object FirebaseErrorChecker {
             error
         }
     }
+    
+    fun testFirebaseStorage(): String {
+        return try {
+            val storage = FirebaseStorage.getInstance()
+            
+            // Test creating a reference
+            val testRef = storage.reference.child("test/test.txt")
+            android.util.Log.d(TAG, "✅ Firebase Storage: Reference created successfully")
+            
+            // Test uploading a small test file (if possible)
+            try {
+                // Create a simple test string
+                val testData = "test".toByteArray()
+                val uploadTask = testRef.putBytes(testData)
+                
+                uploadTask.addOnSuccessListener {
+                    android.util.Log.d(TAG, "✅ Firebase Storage: Test upload successful")
+                    // Clean up the test file
+                    testRef.delete().addOnSuccessListener {
+                        android.util.Log.d(TAG, "✅ Firebase Storage: Test file cleaned up")
+                    }
+                }.addOnFailureListener { e ->
+                    android.util.Log.e(TAG, "❌ Firebase Storage: Test upload failed - ${e.message}", e)
+                }
+                
+                "Firebase Storage test initiated. Check logs for results."
+            } catch (e: Exception) {
+                val error = "Firebase Storage test failed: ${e.message}"
+                android.util.Log.e(TAG, "❌ $error", e)
+                error
+            }
+            
+        } catch (e: Exception) {
+            val error = "Firebase Storage initialization failed: ${e.message}"
+            android.util.Log.e(TAG, "❌ $error", e)
+            error
+        }
+    }
 } 

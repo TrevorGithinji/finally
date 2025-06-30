@@ -1,6 +1,7 @@
 package com.trevor.final_resort
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -22,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.trevor.final_resort.ui.theme.*
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,123 +38,238 @@ fun ProductListScreen(
     var products by remember { mutableStateOf<List<Product>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    var refreshTrigger by remember { mutableStateOf(0) }
     
     val scope = rememberCoroutineScope()
     
-    // Load products when the screen is displayed
-    LaunchedEffect(Unit) {
+    // Load products when the screen is displayed or refreshed
+    LaunchedEffect(refreshTrigger) {
         try {
             isLoading = true
+            android.util.Log.d("ProductListScreen", "Loading products... (refresh #$refreshTrigger)")
             val loadedProducts = ProductManager.getAllProducts()
+            android.util.Log.d("ProductListScreen", "Loaded ${loadedProducts.size} products")
             products = loadedProducts
             error = null
         } catch (e: Exception) {
+            android.util.Log.e("ProductListScreen", "Error loading products: ${e.message}", e)
             error = e.message
         } finally {
             isLoading = false
         }
     }
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Products", fontWeight = FontWeight.Bold) },
-                actions = {
-                    if (currentUser != null) {
-                        IconButton(onClick = onAddProductClick) {
-                            Icon(Icons.Default.Add, contentDescription = "Add Product")
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surface
+                    )
+                )
+            )
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { 
+                        Text(
+                            "Luxury Products", 
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        ) 
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    actions = {
+                        if (currentUser != null) {
+                            IconButton(
+                                onClick = onAddProductClick,
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = Gold,
+                                    contentColor = Black
+                                )
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Add Product")
+                            }
+                        }
+                        IconButton(
+                            onClick = { refreshTrigger++ },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = GoldLight,
+                                contentColor = Black
+                            )
+                        ) {
+                            Text("🔄", fontSize = 16.sp)
+                        }
+                        TextButton(
+                            onClick = onLogoutClick,
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = Gold
+                            )
+                        ) {
+                            Text("Logout", fontWeight = FontWeight.SemiBold)
                         }
                     }
-                    TextButton(onClick = onLogoutClick) {
-                        Text("Logout")
+                )
+            }
+        ) { padding ->
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            CircularProgressIndicator(
+                                color = Gold,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                "Loading luxury products...",
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
-            )
-        }
-    ) { padding ->
-        if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else if (error != null) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Error loading products",
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.error
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = error!!,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = {
-                        scope.launch {
-                            try {
-                                isLoading = true
-                                val loadedProducts = ProductManager.getAllProducts()
-                                products = loadedProducts
-                                error = null
-                            } catch (e: Exception) {
-                                error = e.message
-                            } finally {
-                                isLoading = false
+            } else if (error != null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Error loading products",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = error!!,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            isLoading = true
+                                            val loadedProducts = ProductManager.getAllProducts()
+                                            products = loadedProducts
+                                            error = null
+                                        } catch (e: Exception) {
+                                            error = e.message
+                                        } finally {
+                                            isLoading = false
+                                        }
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Gold,
+                                    contentColor = Black
+                                ),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Retry", fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
-                ) {
-                    Text("Retry")
                 }
-            }
-        } else if (products.isEmpty()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "No products available",
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Be the first to add a product!",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(products) { product ->
-                    ProductCard(
-                        product = product,
-                        onProductClick = onProductClick
-                    )
+            } else if (products.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "✨",
+                                fontSize = 48.sp
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "No products available",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Be the first to add a luxury product!",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(
+                                onClick = { refreshTrigger++ },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Gold,
+                                    contentColor = Black
+                                ),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Refresh Products", fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(products) { product ->
+                        ProductCard(
+                            product = product,
+                            onProductClick = onProductClick
+                        )
+                    }
                 }
             }
         }
@@ -179,41 +297,69 @@ fun ProductCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         onClick = { onProductClick(product) },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Product Image Thumbnail
             if (product.images.isNotEmpty()) {
-                Image(
-                    painter = rememberAsyncImagePainter(
-                        ImageRequest.Builder(LocalContext.current)
-                            .data(product.images.first())
-                            .build()
-                    ),
-                    contentDescription = "Product image",
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
-                )
+                        .height(140.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            ImageRequest.Builder(LocalContext.current)
+                                .data(product.images.first())
+                                .build()
+                        ),
+                        contentDescription = "Product image",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
             } else {
                 // Placeholder for no image
-                Box(
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
+                        .height(140.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Text(
-                        text = "📷 No Image",
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "📷",
+                                fontSize = 32.sp
+                            )
+                            Text(
+                                text = "No Image",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
                 }
             }
             
@@ -225,21 +371,39 @@ fun ProductCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = product.name,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = GoldLight
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = product.category.ifEmpty { "General" },
+                            fontSize = 12.sp,
+                            color = Black,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = Gold
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
                     Text(
-                        text = product.category.ifEmpty { "General" },
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "KSH ${product.price}",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Black,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                     )
                 }
-                Text(
-                    text = "KSH ${product.price}",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
             }
             
             Text(
@@ -261,12 +425,14 @@ fun ProductCard(
                     Icon(
                         Icons.Default.Star,
                         contentDescription = "Rating",
-                        tint = Color(0xFFFFD700),
-                        modifier = Modifier.size(16.dp)
+                        tint = Gold,
+                        modifier = Modifier.size(18.dp)
                     )
                     Text(
                         text = if (averageRating > 0) String.format("%.1f", averageRating) else "No ratings",
-                        fontSize = 12.sp
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "(${product.ratings.size} reviews)",
@@ -282,22 +448,32 @@ fun ProductCard(
                     Icon(
                         Icons.Default.Call,
                         contentDescription = "Call",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
+                        tint = Gold,
+                        modifier = Modifier.size(18.dp)
                     )
                     Text(
                         text = product.sellerPhone,
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.primary
+                        color = Gold,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
             
-            Text(
-                text = "Seller: ${product.sellerName}",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = "Seller: ${product.sellerName}",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
         }
     }
 } 

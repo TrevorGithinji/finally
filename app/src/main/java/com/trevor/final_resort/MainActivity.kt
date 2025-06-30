@@ -32,6 +32,10 @@ class MainActivity : ComponentActivity() {
             FirebaseTest.testFirebaseInitialization()
             FirebaseTest.testFirebaseConnection()
             
+            // Test Firebase Storage specifically
+            val storageTestResult = FirebaseErrorChecker.testFirebaseStorage()
+            Log.d("MainActivity", "Firebase Storage test: $storageTestResult")
+            
             // Show report in toast for debugging
             Toast.makeText(this, "Firebase check completed. Check logs for details.", Toast.LENGTH_SHORT).show()
             
@@ -199,7 +203,12 @@ fun AppContent(
                     onBackClick = {
                         currentScreen = Screen.ProductList
                     },
-                    onShowToast = onShowToast
+                    onShowToast = onShowToast,
+                    onProductDeleted = {
+                        // Clear the selected product and go back to product list
+                        selectedProduct = null
+                        currentScreen = Screen.ProductList
+                    }
                 )
             }
         }

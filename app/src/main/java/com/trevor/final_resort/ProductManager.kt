@@ -47,10 +47,7 @@ object ProductManager {
     suspend fun deleteProduct(productId: String, sellerId: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                // For now, we'll just return false as deletion from Firestore
-                // requires additional implementation
-                // In a real app, you would implement the delete functionality
-                false
+                firebaseService.deleteProduct(productId, sellerId).isSuccess
             } catch (e: Exception) {
                 false
             }

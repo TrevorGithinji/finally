@@ -13,7 +13,9 @@ data class Product(
     val images: List<String> = emptyList(),
     val ratings: List<Rating> = emptyList(),
     val category: String = "",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val isDeleted: Boolean = false,
+    val deletedAt: Long? = null
 )
 
 data class Rating(
